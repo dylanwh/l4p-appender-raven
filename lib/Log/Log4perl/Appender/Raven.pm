@@ -3,6 +3,8 @@ package Log::Log4perl::Appender::Raven;
 use Moose;
 
 use Sentry::Raven;
+use Log::Log4perl;
+use Devel::StackTrace;
 
 has 'sentry_dsn' => ( is => 'ro', isa => 'Str' , required => 1);
 has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 5 );
@@ -29,6 +31,26 @@ sub log{
 
     use Data::Dumper;
     warn Dumper(\%params);
+
+    # Look there to see what sentry expects:
+    # http://sentry.readthedocs.org/en/latest/developer/client/index.html#building-the-json-packet
+
+    my $sentry_message = length($params{message}) > 1000 ? substr($params{message}, 0 , 1000) : $params{message};
+    my $sentry_logger  = $params{log4p_category};
+
+
+    # We are 4 levels down after the standard Log4perl caller_depth
+    my $caller_offset = Log::Log4perl::caller_depth_offset( $Log::Log4perl::caller_depth + 4 );
+    warn "Depth offset is $caller_offset";
+
+    my $caller_frames = Devel::StackTrace->new();
+    {
+        my @frames = $caller_frames->frames();
+        splice(@frames, 0, $caller_offset);
+        $caller_frames->frames(@frames);
+    }
+
+    warn "STACK IS ".$caller_frames->as_string();
 
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);
 }

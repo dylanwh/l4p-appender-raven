@@ -45,8 +45,15 @@ package My::Shiny::Package;
 
 my $LOGGER = Log::Log4perl->get_logger();
 sub emit_error{
+    my ($class) = @_;
     $LOGGER->error("Some error");
+    $class->and_another_one();
 }
+
+sub and_another_one{
+    $LOGGER->error('Deeper error');
+}
+
 1;
 
 package main;
