@@ -66,8 +66,8 @@ sub log{
     my $sentry_logger  = $params{log4p_category};
     my $sentry_level = $L4P2SENTRY{$params{log4p_level}} || 'info';
 
-    # We are 5 levels down after the standard Log4perl caller_depth
-    my $caller_offset = Log::Log4perl::caller_depth_offset( $Log::Log4perl::caller_depth + 5 );
+    # We are 4 levels down after the standard Log4perl caller_depth
+    my $caller_offset = Log::Log4perl::caller_depth_offset( $Log::Log4perl::caller_depth + 4 );
 
     my $caller_frames = Devel::StackTrace->new();
     {
@@ -82,7 +82,7 @@ sub log{
         my ($package, $filename, $line,
             $subroutine, $hasargs,
             $wantarray, $evaltext, $is_require,
-            $hints, $bitmask) = caller($caller_offset - 1);
+            $hints, $bitmask) = caller($caller_offset);
         $sentry_culprit = $subroutine || $filename || 'main';
     }
 
