@@ -122,7 +122,8 @@ This appender will send ALL the log events it receives to your
 Sentry DSN synchronously. If you generate a log of logging, that can make your sentry account
 saturate quite quickly and your application come to a severe slowdown.
 
-Using L<Log::Log4perl::Filter> in your log4perl config is Highly Recommended.
+Using Log4perl appender's Threshold or L<Log::Log4perl::Filter> in your log4perl config, and
+experimenting a little bit is Highly Recommended.
 
 Remember sentry is designed to record errors, so hopefully your application will
 not generate too many of them.
