@@ -22,6 +22,8 @@ has 'tags' => ( is => 'ro' ,isa => 'HashRef', default => sub{ {}; });
 has 'mdc_tags' => ( is => 'ro' , isa => 'Maybe[Str]' );
 # Log4perl MDC key to look for extra
 has 'mdc_extra' => ( is => 'ro', isa => 'Maybe[Str]' );
+# Log4perl MDC key to look for user data.
+has 'mdc_user'  => ( is => 'ro' ,isa => 'Maybe[Str]' );
 
 my %L4P2SENTRY = ('ALL' => 'info',
                   'TRACE' => 'debug',
@@ -96,6 +98,11 @@ sub log{
         $extra = Log::Log4perl::MDC->get($mdc_extra) || {};
     }
 
+    my $user;
+    if( my $mdc_user = $self->mdc_user() ){
+        $user = Log::Log4perl::MDC->get($mdc_user);
+    }
+
     # OK WE HAVE THE BASIC Sentry options.
     $self->raven->capture_message($sentry_message,
                                   logger => $sentry_logger,
@@ -103,7 +110,9 @@ sub log{
                                   culprit => $sentry_culprit,
                                   tags => $tags,
                                   extra => $extra,
-                                  Sentry::Raven->stacktrace_context( $caller_frames ));
+                                  Sentry::Raven->stacktrace_context( $caller_frames ),
+                                  ( $user ? Sentry::Raven->user_context(%$user) : () )
+                                 );
 
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);
 }
@@ -202,6 +211,25 @@ Then anywhere in your code.
 Note that tags added this way will be added to the statically define ones, or override them in case
 of conflict.
 
+=head2 Configure and use User Data
+
+Sentry supports structured user data that can be added to your event.
+User data works a bit like the tags, except only three keys are supported:
+
+id, username and email. See L<Sentry::Raven> (capture_user) for a description of those keys.
+
+Config:
+
+   ...
+   log4perl.appender.Raven.mdc_user=my_sentry_user
+   ...
+
+Then in your code:
+
+  ...
+  Log::Log4perl::MDC->set('my_sentry_user' , { id => '123' , email => 'jeteve@cpan.org', username => 'jeteve' });
+  $log->error("Something very wrong");
+  ...
 
 =head2 Configure and use Dynamic Extra
 
@@ -218,7 +246,7 @@ Config (which MDC key to capture):
 Then anywere in your code:
 
   ...
-  Log::Log4perl::MDC->set('my_sentry_extra' , { user_id => ... , session_id => ... , ...  });
+  Log::Log4perl::MDC->set('my_sentry_extra' , { session_id => ... , ...  });
   $log->error("Something very wrong");
   ...
 

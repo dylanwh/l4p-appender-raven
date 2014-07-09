@@ -20,6 +20,7 @@ log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.context.platform=my-perl
 log4perl.appender.Raven.tags.application=my-application
 log4perl.appender.Raven.mdc_tags=sentry_tags
+log4perl.appender.Raven.mdc_user=sentry_user
 log4perl.appender.Raven.mdc_extra=sentry_extra
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
@@ -51,6 +52,7 @@ my $last_call;
 my $LOGGER = Log::Log4perl->get_logger();
 
 Log::Log4perl::MDC->put('sentry_tags' , { subsystem => 'testing' });
+Log::Log4perl::MDC->put('sentry_user' , { id => 123  });
 Log::Log4perl::MDC->put('sentry_extra' , { session => { user_id => 'something' , request => 'blabla' } , my_own_log_id => 'foobar'  });
 
 $LOGGER->error("Some shiny error");
