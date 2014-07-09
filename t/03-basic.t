@@ -22,6 +22,9 @@ log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
     dies_ok{ Log::Log4perl::init(\$conf); } "Ok sentry_dsn is missing from the config";
 }
 
+
+my $SENTRY_DSN = $ENV{SENTRY_DSN} || 'https://blabla:blabla@app.getsentry.com/some_id';
+
     my $conf = q|
 log4perl.rootLogger=ERROR, Raven
 
@@ -29,7 +32,7 @@ layout_class=Log::Log4perl::Layout::PatternLayout
 layout_pattern=%d %F{1} %L> %m %n
 
 log4perl.appender.Raven=Log::Log4perl::Appender::Raven
-log4perl.appender.Raven.sentry_dsn="https://blabla:blabla@app.getsentry.com/some_id"
+log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
 
