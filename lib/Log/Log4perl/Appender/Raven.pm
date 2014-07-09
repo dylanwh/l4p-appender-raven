@@ -15,10 +15,13 @@ has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
 # STATIC CONTEXT
 has 'context' => ( is => 'ro' , isa => 'HashRef', default => sub{ {}; });
 
-# STATIC TAGS
+# STATIC TAGS. They will go in the global context.
 has 'tags' => ( is => 'ro' ,isa => 'HashRef', default => sub{ {}; });
 
-my %L4P2SENTRY = ('ALL' => 'info', 
+# Log4Perl MDC key to look for tags
+has 'mdc_tags' => ( is => 'ro' , isa => 'Maybe[Str]' );
+
+my %L4P2SENTRY = ('ALL' => 'info',
                   'TRACE' => 'debug',
                   'DEBUG' => 'debug',
                   'INFO' => 'info',
@@ -30,13 +33,15 @@ my %L4P2SENTRY = ('ALL' => 'info',
 sub _build_raven{
     my ($self) = @_;
 
-    warn __PACKAGE__.' static context: '.Dumper($self->context());
-
     my $dsn = $self->sentry_dsn || $ENV{SENTRY_DSN} || confess("No sentry_dsn config or SENTRY_DSN in ENV");
+
+
+    my %raven_context = %{$self->context()};
+    $raven_context{tags} = $self->tags();
 
     return Sentry::Raven->new( sentry_dsn => $dsn,
                                timeout => $self->sentry_timeout,
-                               %{$self->context()}
+                               %raven_context
                              );
 }
 
@@ -79,11 +84,17 @@ sub log{
         $sentry_culprit = $subroutine || $filename || 'main';
     }
 
+    my $tags = {};
+    if( $self->mdc_tags() ){
+        $tags = Log::Log4perl::MDC->get($self->mdc_tags()) || {};
+    }
+
     # OK WE HAVE THE BASIC Sentry options.
     $self->raven->capture_message($sentry_message,
                                   logger => $sentry_logger,
                                   level => $sentry_level,
                                   culprit => $sentry_culprit,
+                                  tags => $tags,
                                   Sentry::Raven->stacktrace_context( $caller_frames ));
 
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);

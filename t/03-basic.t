@@ -79,10 +79,13 @@ my @sentry_calls = ();
 # HACK Sentry::Raven so we capture capture_message
 {
     no strict;
+    no warnings;
     *{'Sentry::Raven::capture_message'} = sub{
         my ($self, $message ,  %args) = @_;
         push @sentry_calls , { message => $message , %args };
     };
+    use warnings;
+    use strict;
 }
 
 My::Shiny::Package->emit_error(1);
