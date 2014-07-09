@@ -116,12 +116,16 @@ __PACKAGE__->meta->make_immutable();
 
   Log::Log4perl::Appender::Raven - Append log events to your Sentry account.
 
-=head1 WARNING
+=head1 WARNING(s)
 
 This appender will send ALL the log events it receives to your
-Sentry DSN. If you generate a log of logging, that can make your sentry account
-saturate quite quickly. Using L<Log::Log4perl::Filter> in your log4perl config
-is Highly Recommended.
+Sentry DSN synchronously. If you generate a log of logging, that can make your sentry account
+saturate quite quickly and your application come to a severe slowdown.
+
+Using L<Log::Log4perl::Filter> in your log4perl config is Highly Recommended.
+
+Remember sentry is designed to record errors, so hopefully your application will
+not generate too many of them.
 
 You have been warned.
 
@@ -153,8 +157,15 @@ Example:
 
   log4perl.appender.Raven=Log::Log4perl::Appender::Raven
   log4perl.appender.Raven.sentry_dsn="http://user:key@host.com/project_id"
+  log4perl.appender.Raven.sentry_timeout=1
   log4perl.appender.Raven.layout=${layout_class}
   log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
+
+=head2 Timeout
+
+The default timeout is 1 second. Feel free to bump it up. If sending an event
+timesout (or if the sentry host is down or doesn't exist), a plain Perl
+warning will be output.
 
 =head2 Configuration with Static Tags
 
