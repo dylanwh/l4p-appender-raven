@@ -108,9 +108,17 @@ __PACKAGE__->meta->make_immutable();
 
   Log::Log4perl::Appender::Raven - Append log events to your Sentry account.
 
+=head1 SYNOPSIS
+
+Read the L<CONFIGURATION> section, then use Log4perl just as usual.
+
+If you are not familiar with Log::Log4perl, please check L<Log::Log4perl>
+
 =head1 CONFIGURATION
 
 This is just another L<Log::Log4perl::Appender>.
+
+=head2 Simple Configuration
 
 The only mandatory configuration key
 is *sentry_dsn* which is your sentry dsn string obtained from your sentry account.
@@ -127,9 +135,54 @@ Example:
   layout_pattern=%X{chunk} %d %F{1} %L> %m %n
 
   log4perl.appender.Raven=Log::Log4perl::Appender::Raven
-  # THIS IS MANDATORY:
   log4perl.appender.Raven.sentry_dsn="http://user:key@host.com/project_id"
   log4perl.appender.Raven.layout=${layout_class}
   log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
+
+=head2 Configuration with Static Tags
+
+You have the option of predefining a set of tags that will be send to
+your Sentry installation with every event. Remember Sentry tags have a name
+and a value (they are not just 'labels').
+
+Example:
+
+  ...
+  log4perl.appender.Raven.tags.application=myproduct
+  log4perl.appender.Raven.tags.installation=live
+  ...
+
+=head2 Configure and use Dynamic Tagging
+
+Dynamic tagging is performed using the Log4Perl MDC mechanism.
+See L<Log::Log4perl::MDC> if you are not familiar with it.
+
+Config (which MDC key to capture):
+
+   ...
+   log4perl.appender.Raven.mdc_tags=my_sentry_tags
+   ...
+
+Then anywhere in your code.
+
+  ...
+  Log::Log4perl::MDC->set('my_sentry_tags' , { subsystem => 'my_subsystem', ... });
+  $log->error("Something very wrong");
+  ...
+
+Note that tags added this way will be added to the statically define ones, or override them in case
+of conflict.
+
+=head2 Configuration with a Static Context.
+
+You can use lines like:
+
+  log4perl.appender.Raven.context.platform=myproduct
+
+To define static L<Sentry::Raven> context. The list of context keys supported is not very
+long, and most of them are defined dynamically when you use this package anyway.
+
+See L<Sentry::Raven> for more details.
+
 
 =cut
