@@ -41,4 +41,17 @@ ok( my $ra =  Log::Log4perl->appender_by_name('Raven') , "Ok got appender 'Raven
 ok( $ra->raven() , "Ok got nested raven client");
 
 
+package My::Shiny::Package;
+
+my $LOGGER = Log::Log4perl->get_logger();
+sub emit_error{
+    $LOGGER->error("Some error");
+}
+1;
+
+package main;
+
+My::Shiny::Package->emit_error();
+
+ok(1);
 done_testing();
