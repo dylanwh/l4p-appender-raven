@@ -6,7 +6,7 @@ use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
 
-has 'sentry_dsn' => ( is => 'ro', isa => 'Str' , required => 1);
+has 'sentry_dsn' => ( is => 'ro', isa => 'Maybe[Str]' );
 has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 5 );
 
 has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
@@ -38,8 +38,8 @@ sub log{
     }
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', 1);
 
-    use Data::Dumper;
-    warn Dumper(\%params);
+    # use Data::Dumper;
+    # warn Dumper(\%params);
 
     # Look there to see what sentry expects:
     # http://sentry.readthedocs.org/en/latest/developer/client/index.html#building-the-json-packet
@@ -68,10 +68,6 @@ sub log{
         $sentry_culprit = $subroutine || $filename || 'main';
     }
 
-
-
-    warn "$sentry_culprit\n";
-
     # OK WE HAVE THE BASIC Sentry options.
     $self->raven->capture_message($sentry_message,
                                   logger => $sentry_logger,
@@ -79,14 +75,12 @@ sub log{
                                   culprit => $sentry_culprit,
                                   Sentry::Raven->stacktrace_context( $caller_frames ));
 
-    warn "Called capture message";
-
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);
 }
 
 
 __PACKAGE__->meta->make_immutable();
-1;
+
 
 =head1 NAME
 
@@ -94,10 +88,14 @@ __PACKAGE__->meta->make_immutable();
 
 =head1 CONFIGURATION
 
-This is just another L<Log::Log4perl::Appender> the only mandatory configuration key
+This is just another L<Log::Log4perl::Appender>.
+
+The only mandatory configuration key
 is *sentry_dsn* which is your sentry dsn string obtained from your sentry account.
 See http://www.getsentry.com/ and https://github.com/getsentry/sentry for more details.
 
+Alternatively to setting this configuration key, you can set an environment variable SENTRY_DSN
+with the same setting. - Not recommended -
 
 Example:
 

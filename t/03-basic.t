@@ -19,7 +19,11 @@ log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
 
 |;
 
-    dies_ok{ Log::Log4perl::init(\$conf); } "Ok sentry_dsn is missing from the config";
+    if( $ENV{SENTRY_DSN} ){
+        lives_ok { Log::Log4perl::init(\$conf); } "Ok sentry_dsn is not in the config, but taken from the ENV";
+    }else{
+        dies_ok{ Log::Log4perl::init(\$conf); } "Ok sentry_dsn is missing from the config";
+    }
 }
 
 
@@ -45,11 +49,17 @@ ok( $ra->raven() , "Ok got nested raven client");
 
 
 package My::Shiny::Package;
+use Carp;
 
 my $LOGGER = Log::Log4perl->get_logger();
 sub emit_error{
-    my ($class) = @_;
-    $LOGGER->error("Some error");
+    my ($class, $number) = @_;
+    eval{
+        confess("Cannot do some stuff for this number $number");
+    };
+    if( my $err = $@ ){
+        $LOGGER->error("Error in doing stuff: ".$err);
+    }
     $class->and_another_one();
 }
 
@@ -61,7 +71,8 @@ sub and_another_one{
 
 package main;
 
-My::Shiny::Package->emit_error();
+My::Shiny::Package->emit_error(1);
+My::Shiny::Package->emit_error(2);
 
 $LOGGER = Log::Log4perl->get_logger();
 
