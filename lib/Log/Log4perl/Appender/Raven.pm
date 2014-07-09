@@ -20,6 +20,8 @@ has 'tags' => ( is => 'ro' ,isa => 'HashRef', default => sub{ {}; });
 
 # Log4Perl MDC key to look for tags
 has 'mdc_tags' => ( is => 'ro' , isa => 'Maybe[Str]' );
+# Log4perl MDC key to look for extra
+has 'mdc_extra' => ( is => 'ro', isa => 'Maybe[Str]' );
 
 my %L4P2SENTRY = ('ALL' => 'info',
                   'TRACE' => 'debug',
@@ -85,8 +87,13 @@ sub log{
     }
 
     my $tags = {};
-    if( $self->mdc_tags() ){
-        $tags = Log::Log4perl::MDC->get($self->mdc_tags()) || {};
+    if( my $mdc_tags = $self->mdc_tags() ){
+        $tags = Log::Log4perl::MDC->get($mdc_tags) || {};
+    }
+
+    my $extra = {};
+    if( my $mdc_extra = $self->mdc_extra() ){
+        $extra = Log::Log4perl::MDC->get($mdc_extra) || {};
     }
 
     # OK WE HAVE THE BASIC Sentry options.
@@ -95,6 +102,7 @@ sub log{
                                   level => $sentry_level,
                                   culprit => $sentry_culprit,
                                   tags => $tags,
+                                  extra => $extra,
                                   Sentry::Raven->stacktrace_context( $caller_frames ));
 
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);
