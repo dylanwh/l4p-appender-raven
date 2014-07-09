@@ -181,6 +181,26 @@ Then anywhere in your code.
 Note that tags added this way will be added to the statically define ones, or override them in case
 of conflict.
 
+
+=head2 Configure and use Dynamic Extra
+
+Sentry allows you to specify any data (as a Single level HashRef) that will be stored with the Event.
+
+It's very similar to dynamic tags, except its not tags.
+
+Config (which MDC key to capture):
+
+  ...
+  log4perl.appender.Raven.mdc_extra=my_sentry_extra
+  ...
+
+Then anywere in your code:
+
+  ...
+  Log::Log4perl::MDC->set('my_sentry_extra' , { user_id => ... , session_id => ... , ...  });
+  $log->error("Something very wrong");
+  ...
+
 =head2 Configuration with a Static Context.
 
 You can use lines like:
