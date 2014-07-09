@@ -29,7 +29,7 @@ layout_class=Log::Log4perl::Layout::PatternLayout
 layout_pattern=%d %F{1} %L> %m %n
 
 log4perl.appender.Raven=Log::Log4perl::Appender::Raven
-log4perl.appender.Raven.sentry_dsn="http://user:key@host.com/project_id"
+log4perl.appender.Raven.sentry_dsn="https://blabla:blabla@app.getsentry.com/some_id"
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
 
@@ -59,6 +59,10 @@ sub and_another_one{
 package main;
 
 My::Shiny::Package->emit_error();
+
+$LOGGER = Log::Log4perl->get_logger();
+
+$LOGGER->error("Error at main level");
 
 ok(1);
 done_testing();

@@ -12,6 +12,15 @@ has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 
 has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
 has 'context' => ( is => 'ro' , isa => 'HashRef', default => sub{ {}; });
 
+my %L4P2SENTRY = ('ALL' => 'info', 
+                  'TRACE' => 'debug',
+                  'DEBUG' => 'debug',
+                  'INFO' => 'info',
+                  'WARN' => 'warning',
+                  'ERROR' => 'error',
+                  'FATAL' => 'fatal');
+
+
 sub _build_raven{
     my ($self) = @_;
     return Sentry::Raven->new( sentry_dsn => $self->sentry_dsn,
@@ -37,20 +46,40 @@ sub log{
 
     my $sentry_message = length($params{message}) > 1000 ? substr($params{message}, 0 , 1000) : $params{message};
     my $sentry_logger  = $params{log4p_category};
+    my $sentry_level = $L4P2SENTRY{$params{log4p_level}} || 'info';
 
-
-    # We are 4 levels down after the standard Log4perl caller_depth
-    my $caller_offset = Log::Log4perl::caller_depth_offset( $Log::Log4perl::caller_depth + 4 );
-    warn "Depth offset is $caller_offset";
+    # We are 5 levels down after the standard Log4perl caller_depth
+    my $caller_offset = Log::Log4perl::caller_depth_offset( $Log::Log4perl::caller_depth + 5 );
 
     my $caller_frames = Devel::StackTrace->new();
     {
+        ## Remove the frames from the Log4Perl layer.
         my @frames = $caller_frames->frames();
         splice(@frames, 0, $caller_offset);
         $caller_frames->frames(@frames);
     }
 
-    warn "STACK IS ".$caller_frames->as_string();
+    my $sentry_culprit;
+    {
+        my ($package, $filename, $line,
+            $subroutine, $hasargs,
+            $wantarray, $evaltext, $is_require,
+            $hints, $bitmask) = caller($caller_offset - 1);
+        $sentry_culprit = $subroutine || $filename || 'main';
+    }
+
+
+
+    warn "$sentry_culprit\n";
+
+    # OK WE HAVE THE BASIC Sentry options.
+    $self->raven->capture_message($sentry_message,
+                                  logger => $sentry_logger,
+                                  level => $sentry_level,
+                                  culprit => $sentry_culprit,
+                                  Sentry::Raven->stacktrace_context( $caller_frames ));
+
+    warn "Called capture message";
 
     Log::Log4perl::MDC->put(__PACKAGE__.'-reentrance', undef);
 }
