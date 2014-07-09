@@ -2,6 +2,7 @@ package Log::Log4perl::Appender::Raven;
 
 use Moose;
 
+use Data::Dumper;
 use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
@@ -10,7 +11,12 @@ has 'sentry_dsn' => ( is => 'ro', isa => 'Maybe[Str]' );
 has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 5 );
 
 has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
+
+# STATIC CONTEXT
 has 'context' => ( is => 'ro' , isa => 'HashRef', default => sub{ {}; });
+
+# STATIC TAGS
+has 'tags' => ( is => 'ro' ,isa => 'HashRef', default => sub{ {}; });
 
 my %L4P2SENTRY = ('ALL' => 'info', 
                   'TRACE' => 'debug',
@@ -23,7 +29,12 @@ my %L4P2SENTRY = ('ALL' => 'info',
 
 sub _build_raven{
     my ($self) = @_;
-    return Sentry::Raven->new( sentry_dsn => $self->sentry_dsn,
+
+    warn __PACKAGE__.' static context: '.Dumper($self->context());
+
+    my $dsn = $self->sentry_dsn || $ENV{SENTRY_DSN} || confess("No sentry_dsn config or SENTRY_DSN in ENV");
+
+    return Sentry::Raven->new( sentry_dsn => $dsn,
                                timeout => $self->sentry_timeout,
                                %{$self->context()}
                              );
@@ -109,6 +120,5 @@ Example:
   log4perl.appender.Raven.sentry_dsn="http://user:key@host.com/project_id"
   log4perl.appender.Raven.layout=${layout_class}
   log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
-
 
 =cut
