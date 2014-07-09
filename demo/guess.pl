@@ -4,6 +4,9 @@ use strict;
 use warnings;
 
 use Log::Log4perl;
+use Log::Log4perl::MDC;
+
+use MyNumberGuess;
 
 my $l4pconf = q|
 log4perl.rootLogger=TRACE, Screen, Raven
@@ -32,35 +35,14 @@ my $LOGGER = Log::Log4perl->get_logger();
 
 
 
+Log::Log4perl::MDC->put('sentry_tags', { phase => 'init_game' });
+
+my $number_guess = MyNumberGuess->new();
 
 $LOGGER->info("Starting game");
-$LOGGER->debug("Picking a number");
 
-my $to_guess = int(rand(101));
+$number_guess->do_play();
 
-print "Guess the number [1..100]:";
-
-while( chomp(my $num = <>) ){
-    unless( $num =~ /^[0-9]+$/ ){ $LOGGER->error("Wrong number format ($num is not an integer)"); next; }
-
-    if( $num == $to_guess ){
-        print "You won!\n";
-        $LOGGER->debug("User guessed the number");
-        last;
-    }
-
-    unless( $num >= 1 && $num <= 100 ){
-        $LOGGER->logconfess("Number $num is outside acceptable range");
-    }
-
-    if( $num > $to_guess ){
-        $LOGGER->trace("Number is too high");
-        print "Too high\n";
-    }else{
-        print "Too low\n";
-    }
-
-    print "Guess again:";
-}
+Log::Log4perl::MDC->put('sentry_tags', { phase => 'shutting_down' });
 
 $LOGGER->info("Done!");
