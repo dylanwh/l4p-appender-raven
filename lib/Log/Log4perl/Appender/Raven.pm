@@ -116,6 +116,15 @@ __PACKAGE__->meta->make_immutable();
 
   Log::Log4perl::Appender::Raven - Append log events to your Sentry account.
 
+=head1 WARNING
+
+This appender will send ALL the log events it receives to your
+Sentry DSN. If you generate a log of logging, that can make your sentry account
+saturate quite quickly. Using L<Log::Log4perl::Filter> in your log4perl config
+is Highly Recommended.
+
+You have been warned.
+
 =head1 SYNOPSIS
 
 Read the L<CONFIGURATION> section, then use Log4perl just as usual.
@@ -212,5 +221,8 @@ long, and most of them are defined dynamically when you use this package anyway.
 
 See L<Sentry::Raven> for more details.
 
+=head1 AUTHOR
+
+Jerome Eteve jeteve@cpan.com
 
 =cut
