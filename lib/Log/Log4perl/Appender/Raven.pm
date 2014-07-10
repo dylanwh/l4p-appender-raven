@@ -65,7 +65,7 @@ See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
 
             my $level_up = 1;
 
-            # In an eval, 0nothing is fatal:
+            # In an eval, nothing is fatal:
             if( $^S ){
                 $method = 'error';
             }
@@ -217,7 +217,7 @@ __PACKAGE__->meta->make_immutable();
 =head1 WARNING(s)
 
 This appender will send ALL the log events it receives to your
-Sentry DSN synchronously. If you generate a log of logging, that can make your sentry account
+Sentry DSN synchronously. If you generate a lot of logging, that can make your sentry account
 saturate quite quickly and your application come to a severe slowdown.
 
 Using Log4perl appender's Threshold or L<Log::Log4perl::Filter> in your log4perl config, and
