@@ -125,6 +125,14 @@ __PACKAGE__->meta->make_immutable();
 
   Log::Log4perl::Appender::Raven - Append log events to your Sentry account.
 
+=head1 BUILD STATUS
+
+=begin html
+
+<a href="https://travis-ci.org/jeteve/l4p-appender-raven"><img src="https://travis-ci.org/jeteve/l4p-appender-raven.svg?branch=master"></a>
+
+=end html
+
 =head1 WARNING(s)
 
 This appender will send ALL the log events it receives to your
