@@ -2,13 +2,15 @@ package Log::Log4perl::Appender::Raven;
 
 use Moose;
 
+use Carp;
 use Data::Dumper;
 use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
 
 has 'sentry_dsn' => ( is => 'ro', isa => 'Maybe[Str]' );
-has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 5 );
+has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 1 );
+has 'infect_die' => ( is => 'ro' , isa => 'Bool', default => 0 );
 
 has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
 
@@ -32,6 +34,65 @@ my %L4P2SENTRY = ('ALL' => 'info',
                   'WARN' => 'warning',
                   'ERROR' => 'error',
                   'FATAL' => 'fatal');
+
+sub BUILD{
+    my ($self) = @_;
+    if( $self->infect_die() ){
+        # Infect die. This is based on http://log4perl.sourceforge.net/releases/Log-Log4perl/docs/html/Log/Log4perl/FAQ.html#73200
+        $SIG{__DIE__} = sub{
+
+
+            ## Are we called from within log4perl at all.
+            {
+                my $frame_up = 0;
+                while( my @caller = caller($frame_up++) ){
+                    if( $caller[0] =~ /^Log::Log4perl/ ){
+                        return;
+                    }
+                }
+            }
+
+
+            ## warn "CALLING die Handler";
+            my $method = 'fatal';
+
+            my $level_up = 1;
+
+            # In an eval, 0nothing is fatal:
+            if( $^S ){
+                $method = 'error';
+            }
+
+            my ($package, $filename, $line,
+                $subroutine, @discard )  = caller(0);
+            # warn "CALLER PACKAGE IS $package\n";
+            # warn "CALLER SUBROUTINE IS $subroutine";
+            if( $package =~ /^Carp/ ){
+                # One level up please. We dont want to make Carp the culprit.
+                # and we want to know which is the calling package (to get the logger).
+                ($package, @discard )  = caller(1);
+                $level_up++  ;
+            }
+
+            my $logger = Log::Log4perl->get_logger($package || '');
+
+            ## This will make sure the following error or
+            ## fatal level work as usual.
+            local $Log::Log4perl::caller_depth =
+              $Log::Log4perl::caller_depth + $level_up ;
+
+            $logger->$method(@_);
+
+            if( $method eq 'error' ){
+                # Do not die. This will be catched by the enclosing eval.
+                return undef;
+            }
+
+            # Not in an eval, die for good.
+            die @_;
+        };
+    }
+}
 
 
 sub _build_raven{
@@ -79,13 +140,18 @@ sub log{
         $caller_frames->frames(@frames);
     }
 
-    my $sentry_culprit;
+    my $sentry_culprit = 'main';
     {
-        my ($package, $filename, $line,
-            $subroutine, $hasargs,
-            $wantarray, $evaltext, $is_require,
-            $hints, $bitmask) = caller($caller_offset);
-        $sentry_culprit = $subroutine || $filename || 'main';
+        my $call_depth = $caller_offset;
+        # Go up the caller ladder until the first non eval
+        while( my @caller_info = caller($call_depth++) ){
+            unless( ( $caller_info[3] || '' ) eq '(eval)' ){
+                # This is good.
+                # Subroutine name, or filename, or just main
+                $sentry_culprit = $caller_info[3] || $caller_info[1] || 'main';
+                last;
+            }
+        }
     }
 
     my $tags = {};

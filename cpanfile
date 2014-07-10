@@ -1,3 +1,4 @@
+requires 'Carp' , '>= 1.26';
 requires 'Data::Dumper';
 requires 'Devel::StackTrace' , '>= 1.27';
 requires 'Log::Log4perl' , '>= 1.24';
