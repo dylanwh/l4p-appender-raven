@@ -145,6 +145,17 @@ Read the L<CONFIGURATION> section, then use Log4perl just as usual.
 
 If you are not familiar with Log::Log4perl, please check L<Log::Log4perl>
 
+In a nutshell, here's the minimul l4p config to output anything from ERROR to Sentry:
+
+  log4perl.rootLogger=DEBUG, Raven
+
+  log4perl.appender.Raven=Log::Log4perl::Appender::Raven
+  log4perl.appender.Raven.Threshold=ERROR
+  log4perl.appender.Raven.sentry_dsn="https://user:key@sentry-host.com/project_id"
+  log4perl.appender.Raven.layout=Log::Log4perl::Layout::PatternLayout
+  log4perl.appender.Raven.layout.ConversionPattern=%X{chunk} %d %F{1} %L> %m %n
+
+
 =head1 CONFIGURATION
 
 This is just another L<Log::Log4perl::Appender>.
