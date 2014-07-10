@@ -38,9 +38,14 @@ my %L4P2SENTRY = ('ALL' => 'info',
 sub BUILD{
     my ($self) = @_;
     if( $self->infect_die() ){
+        warn q|INFECTING SIG __DIE__ with Log4perl trickery. Ideally you should not count on that.
+
+See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
+
+|;
+
         # Infect die. This is based on http://log4perl.sourceforge.net/releases/Log-Log4perl/docs/html/Log/Log4perl/FAQ.html#73200
         $SIG{__DIE__} = sub{
-
 
             ## Are we called from within log4perl at all.
             {
@@ -352,6 +357,26 @@ To define static L<Sentry::Raven> context. The list of context keys supported is
 long, and most of them are defined dynamically when you use this package anyway.
 
 See L<Sentry::Raven> for more details.
+
+=head1 CODE WITHOUT LOG4PERL
+
+Warning: Experimental feature.
+
+If your code, or some of its dependencies is not using Log4perl, you might want
+to consider infecting the __DIE__ pseudo signal with some amount of trickery to have die (and Carp::confess/croak)
+calls go through log4perl.
+
+This appender makes that easy for you, and provides the 'infect_die' configuration property
+to do so:
+
+  ...
+  log4perl.appender.Raven.infect_die=1
+  ...
+
+This is heavily inspired by L<https://metacpan.org/pod/Log::Log4perl::FAQ#My-program-already-uses-warn-and-die-.-How-can-I-switch-to-Log4perl>
+
+While this can be convenient to quickly implement this in a non-log4perl aware piece of software, you
+are strongly encourage not to use this feature and pepper your call with appropriate Log4perl calls.
 
 =head1 AUTHOR
 
