@@ -2,6 +2,7 @@ package MyNumberGuess;
 
 use Moose;
 
+use Carp;
 use Log::Log4perl;
 my $LOGGER = Log::Log4perl->get_logger();
 
@@ -42,7 +43,7 @@ sub do_play{
 sub check_range{
     my ($self, $num) = @_;
     unless( $num >= 1 && $num <= 10 ){
-        $LOGGER->logconfess("Number $num is outside acceptable range");
+        confess("Number $num is outside acceptable range");
     }
 }
 

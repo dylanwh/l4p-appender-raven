@@ -20,6 +20,7 @@ log4perl.appender.Screen.layout.ConversionPattern=${layout_pattern}
 
 log4perl.appender.Raven=Log::Log4perl::Appender::Raven
 log4perl.appender.Raven.Threshold=ERROR
+log4perl.appender.Raven.infect_die=1
 log4perl.appender.Raven.tags.application=my-demo-app
 log4perl.appender.Raven.mdc_tags=sentry_tags
 log4perl.appender.Raven.mdc_user=sentry_user
