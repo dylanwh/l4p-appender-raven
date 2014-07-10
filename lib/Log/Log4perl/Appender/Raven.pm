@@ -19,11 +19,11 @@ has 'context' => ( is => 'ro' , isa => 'HashRef', default => sub{ {}; });
 has 'tags' => ( is => 'ro' ,isa => 'HashRef', default => sub{ {}; });
 
 # Log4Perl MDC key to look for tags
-has 'mdc_tags' => ( is => 'ro' , isa => 'Maybe[Str]' );
+has 'mdc_tags' => ( is => 'ro' , isa => 'Maybe[Str]' , default => 'sentry_tags' );
 # Log4perl MDC key to look for extra
-has 'mdc_extra' => ( is => 'ro', isa => 'Maybe[Str]' );
+has 'mdc_extra' => ( is => 'ro', isa => 'Maybe[Str]' , default => 'sentry_extra' );
 # Log4perl MDC key to look for user data.
-has 'mdc_user'  => ( is => 'ro' ,isa => 'Maybe[Str]' );
+has 'mdc_user'  => ( is => 'ro' ,isa => 'Maybe[Str]' , default => 'sentry_user' );
 
 my %L4P2SENTRY = ('ALL' => 'info',
                   'TRACE' => 'debug',
@@ -214,21 +214,25 @@ Example:
 Dynamic tagging is performed using the Log4Perl MDC mechanism.
 See L<Log::Log4perl::MDC> if you are not familiar with it.
 
-Config (which MDC key to capture):
+Anywhere in your code.
+
+  ...
+  Log::Log4perl::MDC->set('sentry_tags' , { subsystem => 'my_subsystem', ... });
+  $log->error("Something very wrong");
+  ...
+
+Or specify which key to capture in config:
 
    ...
    log4perl.appender.Raven.mdc_tags=my_sentry_tags
    ...
 
-Then anywhere in your code.
-
-  ...
-  Log::Log4perl::MDC->set('my_sentry_tags' , { subsystem => 'my_subsystem', ... });
-  $log->error("Something very wrong");
-  ...
 
 Note that tags added this way will be added to the statically define ones, or override them in case
 of conflict.
+
+Note: Tags are meant to categorize your Sentry events and will be displayed
+in the Sentry GUI like any other category.
 
 =head2 Configure and use User Data
 
@@ -237,18 +241,20 @@ User data works a bit like the tags, except only three keys are supported:
 
 id, username and email. See L<Sentry::Raven> (capture_user) for a description of those keys.
 
-Config:
+
+In your code:
+
+  ...
+  Log::Log4perl::MDC->set('sentry_user' , { id => '123' , email => 'jeteve@cpan.org', username => 'jeteve' });
+  $log->error("Something very wrong");
+  ...
+
+
+Or specify the MDC key to capture in Config:
 
    ...
    log4perl.appender.Raven.mdc_user=my_sentry_user
    ...
-
-Then in your code:
-
-  ...
-  Log::Log4perl::MDC->set('my_sentry_user' , { id => '123' , email => 'jeteve@cpan.org', username => 'jeteve' });
-  $log->error("Something very wrong");
-  ...
 
 =head2 Configure and use Dynamic Extra
 
@@ -256,17 +262,18 @@ Sentry allows you to specify any data (as a Single level HashRef) that will be s
 
 It's very similar to dynamic tags, except its not tags.
 
-Config (which MDC key to capture):
-
-  ...
-  log4perl.appender.Raven.mdc_extra=my_sentry_extra
-  ...
-
 Then anywere in your code:
 
   ...
   Log::Log4perl::MDC->set('my_sentry_extra' , { session_id => ... , ...  });
   $log->error("Something very wrong");
+  ...
+
+
+Or specify MDC key to capture in config:
+
+  ...
+  log4perl.appender.Raven.mdc_extra=my_sentry_extra
   ...
 
 =head2 Configuration with a Static Context.

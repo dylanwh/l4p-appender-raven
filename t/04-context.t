@@ -19,9 +19,6 @@ log4perl.appender.Raven=Log::Log4perl::Appender::Raven
 log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.context.platform=my-perl
 log4perl.appender.Raven.tags.application=my-application
-log4perl.appender.Raven.mdc_tags=sentry_tags
-log4perl.appender.Raven.mdc_user=sentry_user
-log4perl.appender.Raven.mdc_extra=sentry_extra
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
 
@@ -61,6 +58,10 @@ $LOGGER->error("Some shiny error");
 ok($last_call, "Last call was recorded");
 is($last_call->{tags}->{subsystem} , 'testing' , "Ok tag about testing subsystem is there");
 is($last_call->{extra}->{session}->{user_id} , "something");
+is($last_call->{'sentry.interfaces.User'}->{id} , 123 );
+
+# use Data::Dumper;
+# diag(Dumper($last_call));
 
 ok(1);
 done_testing();
