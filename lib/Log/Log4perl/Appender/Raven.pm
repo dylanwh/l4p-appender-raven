@@ -358,6 +358,10 @@ long, and most of them are defined dynamically when you use this package anyway.
 
 See L<Sentry::Raven> for more details.
 
+=head1 USING Log::Any
+
+This is tested to work with Log::Any just the same way it works when you use Log4perl directly.
+
 =head1 CODE WITHOUT LOG4PERL
 
 Warning: Experimental feature.
@@ -377,6 +381,10 @@ This is heavily inspired by L<https://metacpan.org/pod/Log::Log4perl::FAQ#My-pro
 
 While this can be convenient to quickly implement this in a non-log4perl aware piece of software, you
 are strongly encourage not to use this feature and pepper your call with appropriate Log4perl calls.
+
+=head1 SEE ALSO
+
+L<Sentry::Raven> , L<Log::Log4perl>, L<Log::Any> , L<Log::Any::Adapter::Log4perl>
 
 =head1 AUTHOR
 

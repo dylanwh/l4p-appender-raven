@@ -7,3 +7,5 @@ requires 'Sentry::Raven', '>= 0.05';
 
 test_requires 'Test::Fatal';
 test_requires 'Test::More';
+test_requires 'Log::Any';
+test_requires 'Log::Any::Adapter::Log4perl';
