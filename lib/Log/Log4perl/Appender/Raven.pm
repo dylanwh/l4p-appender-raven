@@ -154,12 +154,20 @@ sub log{
         my $call_depth = $caller_offset;
         # Go up the caller ladder until the first non eval
         while( my @caller_info = caller($call_depth++) ){
-            unless( ( $caller_info[3] || '' ) eq '(eval)' ){
-                # This is good.
-                # Subroutine name, or filename, or just main
-                $sentry_culprit = $caller_info[3] || $caller_info[1] || 'main';
-                last;
-            }
+
+          # Skip evals and __ANON__ methods.
+          # The anon method will make that compatible with the new Log::Any (>0.15)
+          my $caller_string = $caller_info[3] || '';
+
+          unless( ( $caller_string eq '(eval)' )
+                  || ( scalar(reverse($caller_string)) =~ /^__NONA__/ )
+                  #  ^ This test for the caller string to end with __ANON__ , but faster.
+                ){
+            # This is good.
+            # Subroutine name, or filename, or just main
+            $sentry_culprit = $caller_info[3] || $caller_info[1] || 'main';
+            last;
+          }
         }
     }
 
