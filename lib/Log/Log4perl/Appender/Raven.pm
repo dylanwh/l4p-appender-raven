@@ -12,7 +12,7 @@ use Text::Template;
 ## Configuration
 has 'sentry_dsn' => ( is => 'ro', isa => 'Maybe[Str]' );
 has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 1 );
-has 'sentry_culprit_template' => ( is => 'ro', isa => 'Str', required => 1 , default => '');
+has 'sentry_culprit_template' => ( is => 'ro', isa => 'Str', required => 1 , default => '{$function}');
 has 'infect_die' => ( is => 'ro' , isa => 'Bool', default => 0 );
 # STATIC CONTEXT
 has 'context' => ( is => 'ro' , isa => 'HashRef', default => sub{ {}; });
@@ -108,7 +108,7 @@ See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
 
 {
     # The fallback culprint template will signal itself as such in sentry.
-    my $FALLBACK_CULPRIT_TEMPLATE = 'blabla - FALLBACK';
+    my $FALLBACK_CULPRIT_TEMPLATE = 'FALLBACK {$function}';
     sub _build_culprit_text_template{
         my ($self) = @_;
         my $tmpl = Text::Template->new( TYPE => 'STRING',
@@ -161,7 +161,7 @@ sub log{
     # We are 4 levels down after the standard Log4perl caller_depth
     my $caller_offset = Log::Log4perl::caller_depth_offset( $Log::Log4perl::caller_depth + 4 );
 
-    ## Stringify arguments NOW. This avoid sending huuge objects when
+    ## Stringify arguments NOW (no_refs => 1). This avoids sending huuuuuge objects when
     ## Serializing this stack trace inside Sentry::Raven
     my $caller_frames = Devel::StackTrace->new( no_refs => 1);
     {
@@ -171,7 +171,11 @@ sub log{
         $caller_frames->frames(@frames);
     }
 
-    my $sentry_culprit = 'main';
+    # Defaults caller properties
+    my $caller_properties = {
+        function => 'main',
+        line => 'NOLINE'
+    };
     {
         my $call_depth = $caller_offset;
         # Go up the caller ladder until the first non eval
@@ -185,10 +189,11 @@ sub log{
                   || ( scalar(reverse($caller_string)) =~ /^__NONA__/ )
                   #  ^ This test for the caller string to end with __ANON__ , but faster.
                 ){
-            # This is good.
-            # Subroutine name, or filename, or just main
-            $sentry_culprit = $caller_info[3] || $caller_info[1] || 'main';
-            last;
+              # This is good.
+              # Subroutine name, or filename, or just main
+              $caller_properties->{function} = $caller_info[3] || $caller_info[1] || 'main';
+              $caller_properties->{line} = $caller_info[2] || 'NOLINE';
+              last;
           }
         }
     }
@@ -212,6 +217,11 @@ sub log{
     if( my $mdc_http = $self->mdc_http() ){
         $http = Log::Log4perl::MDC->get($mdc_http);
     }
+
+    # Calculate the culprit from the template
+    my $sentry_culprit = $self->culprit_text_template->fill_in( HASH => {
+        %{$caller_properties}
+    });
 
     # OK WE HAVE THE BASIC Sentry options.
     $self->raven->capture_message($sentry_message,
