@@ -179,7 +179,7 @@ sub log{
     {
         my $call_depth = $caller_offset;
         # Go up the caller ladder until the first non eval
-        while( my @caller_info = caller($call_depth++) ){
+        while( my @caller_info = caller($call_depth) ){
 
           # Skip evals and __ANON__ methods.
           # The anon method will make that compatible with the new Log::Any (>0.15)
@@ -192,10 +192,14 @@ sub log{
               # This is good.
               # Subroutine name, or filename, or just main
               $caller_properties->{function} = $caller_info[3] || $caller_info[1] || 'main';
-              $caller_properties->{line} = $caller_info[2] || 'NOLINE';
+              # For other properties, we are interested in the place where $log->something
+              # was called, not were the caller of $log->something was called from
+              my @log_call_info = caller($call_depth - 1);
+              $caller_properties->{line} = $log_call_info[2] || 'NOLINE';
               last;
           }
-        }
+          $call_depth++;
+      }
     }
 
     my $tags = {};

@@ -33,6 +33,7 @@ log4perl.appender.Raven=Log::Log4perl::Appender::Raven
 log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
+log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}
 
 |;
 
@@ -67,7 +68,7 @@ $object->do_stuff();
 
 ok( $last_call , "Raven was used");
 # The culprit is not directly the eval, but the caller of the eval.
-is( $last_call->{culprit} , 'MyObject::do_stuff' );
+is( $last_call->{culprit} , 'MyObject::do_stuff-10' );
 $last_call = undef;
 
 
