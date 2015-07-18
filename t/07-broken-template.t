@@ -17,14 +17,14 @@ log4perl.appender.Raven=Log::Log4perl::Appender::Raven
 log4perl.appender.Raven.sentry_dsn="http://user:key@host.com/project_id"
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
+# This is the broken template string:
+log4perl.appender.Raven.sentry_culprit_template="Dear {$kdokwod"
 
 |;
 
 lives_ok { Log::Log4perl::init(\$conf); } "Ok config is goo";
 
 ok( my $ra =  Log::Log4perl->appender_by_name('Raven') , "Ok got appender 'Raven'");
-ok( $ra->raven() , "Ok got nested raven client");
 ok( $ra->culprit_text_template(), "Ok got culprit template");
-
 
 done_testing();

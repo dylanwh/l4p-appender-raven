@@ -7,19 +7,17 @@ use Data::Dumper;
 use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
+use Text::Template;
 
+## Configuration
 has 'sentry_dsn' => ( is => 'ro', isa => 'Maybe[Str]' );
 has 'sentry_timeout' => ( is => 'ro' , isa => 'Int' ,required => 1 , default => 1 );
+has 'sentry_culprit_template' => ( is => 'ro', isa => 'Str', required => 1 , default => '');
 has 'infect_die' => ( is => 'ro' , isa => 'Bool', default => 0 );
-
-has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
-
 # STATIC CONTEXT
 has 'context' => ( is => 'ro' , isa => 'HashRef', default => sub{ {}; });
-
 # STATIC TAGS. They will go in the global context.
 has 'tags' => ( is => 'ro' ,isa => 'HashRef', default => sub{ {}; });
-
 # Log4Perl MDC key to look for tags
 has 'mdc_tags' => ( is => 'ro' , isa => 'Maybe[Str]' , default => 'sentry_tags' );
 # Log4perl MDC key to look for extra
@@ -28,6 +26,13 @@ has 'mdc_extra' => ( is => 'ro', isa => 'Maybe[Str]' , default => 'sentry_extra'
 has 'mdc_user'  => ( is => 'ro' ,isa => 'Maybe[Str]' , default => 'sentry_user' );
 # Log4perl MDC key to look for http data.
 has 'mdc_http' => ( is => 'ro' , isa => 'Maybe[Str]' , default => 'sentry_http' );
+
+## End of configuration
+
+# Operation objects
+has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
+has 'culprit_text_template' => ( is => 'ro', isa => 'Text::Template' , lazy_build => 1);
+
 
 my %L4P2SENTRY = ('ALL' => 'info',
                   'TRACE' => 'debug',
@@ -101,6 +106,23 @@ See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
     }
 }
 
+{
+    # The fallback culprint template will signal itself as such in sentry.
+    my $FALLBACK_CULPRIT_TEMPLATE = 'blabla - FALLBACK';
+    sub _build_culprit_text_template{
+        my ($self) = @_;
+        my $tmpl = Text::Template->new( TYPE => 'STRING',
+                                        SOURCE => $self->sentry_culprit_template()
+                                    );
+        unless( $tmpl->compile() ){
+            warn "Cannot compile template from '".$self->sentry_culprit_template()."' ERROR:".$Text::Template::ERROR.
+                " - Will fallback to hardcoded '".$FALLBACK_CULPRIT_TEMPLATE."'";
+            $tmpl = Text::Template->new( TYPE => 'STRING', SOURCE => $FALLBACK_CULPRIT_TEMPLATE);
+            $tmpl->compile() or die "Invalid fallback template ".$FALLBACK_CULPRIT_TEMPLATE;
+        }
+        return $tmpl;
+    }
+}
 
 sub _build_raven{
     my ($self) = @_;
