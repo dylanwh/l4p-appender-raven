@@ -112,7 +112,8 @@ See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
     sub _build_culprit_text_template{
         my ($self) = @_;
         my $tmpl = Text::Template->new( TYPE => 'STRING',
-                                        SOURCE => $self->sentry_culprit_template()
+                                        SOURCE => $self->sentry_culprit_template(),
+                                        
                                     );
         unless( $tmpl->compile() ){
             warn "Cannot compile template from '".$self->sentry_culprit_template()."' ERROR:".$Text::Template::ERROR.
@@ -171,13 +172,16 @@ sub log{
         $caller_frames->frames(@frames);
     }
 
+    my $call_depth = $caller_offset;
+
     # Defaults caller properties
     my $caller_properties = {
         function => 'main',
-        line => 'NOLINE'
     };
+    my @log_call_info = caller($call_depth - 1);
+    $caller_properties->{line} = $log_call_info[2] || 'NOTOPLINE';
+
     {
-        my $call_depth = $caller_offset;
         # Go up the caller ladder until the first non eval
         while( my @caller_info = caller($call_depth) ){
 
@@ -314,6 +318,31 @@ Example:
   log4perl.appender.Raven.sentry_timeout=1
   log4perl.appender.Raven.layout=${layout_class}
   log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
+
+=head2 Configuring the culprit string
+
+By default, this appender will calculate the Sentry culprit to be
+the fully qualified name of the function that called the log method
+(like $log->error() or, $log->warn() etc.. )
+
+If you require more flexibility and precision in your culprit, you can
+configure it as a template. For instance:
+
+ log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}
+
+The default is '{$function}', as Sentry prescribes.
+
+The template format follows L<Text::Template> and the available variables and functions are as follow:
+
+=over
+
+=item function
+
+The fully qualified name of the function that called the log method.
+
+=item line
+
+The line at which the log method was called
 
 =head2 Timeout
 

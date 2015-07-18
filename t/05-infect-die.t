@@ -22,6 +22,7 @@ log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.infect_die=1
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
+log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}
 
 |;
 
@@ -54,7 +55,7 @@ eval{
 
 ok( $last_call , "Raven was used");
 # The culprit is not directly the eval, but the caller of the eval.
-is( $last_call->{culprit} , 'main' );
+is( $last_call->{culprit} , 'main-53' );
 
 $last_call = undef;
 
@@ -65,7 +66,7 @@ eval{
 };
 
 ok( $last_call , "Raven was used");
-is( $last_call->{culprit} , 'main::die_horribly' );
+is( $last_call->{culprit} , 'main::die_horribly-63' );
 
 $last_call = undef;
 
@@ -76,7 +77,7 @@ eval{
 };
 
 ok( $last_call , "Raven was used");
-is( $last_call->{culprit} , 'main::do_confess' );
+is( $last_call->{culprit} , 'main::do_confess-73' );
 
 $last_call = undef;
 
@@ -94,7 +95,7 @@ eval{
 };
 
 ok( $last_call , "Raven was used");
-is( $last_call->{culprit} , 'main::eval_wrapper' );
+is( $last_call->{culprit} , 'main::eval_wrapper-86' );
 $last_call = undef;
 $call_count = 0;
 
@@ -104,7 +105,7 @@ eval{
     $LOGGER->logdie("Do'h");
 };
 ok( $last_call , "Raven was used");
-is( $last_call->{culprit} , 'main' );
+is( $last_call->{culprit} , 'main-105' );
 is( $call_count , 1 , "Raven send message called only once, not two times (the sig DIE one is avoided)");
 $last_call = undef;
 
