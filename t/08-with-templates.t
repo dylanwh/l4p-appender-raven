@@ -18,7 +18,7 @@ log4perl.appender.Raven=Log::Log4perl::Appender::Raven
 log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
-log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}
+log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}-{sign($message, 40)}
 
 |;
 
@@ -66,8 +66,8 @@ my @sentry_calls = ();
 My::Shiny::Package->emit_error(1);
 
 is( scalar(@sentry_calls) , 2 , "Ok two calls in sentry");
-is( $sentry_calls[0]->{culprit}  , 'My::Shiny::Package::emit_error-38' );
-is( $sentry_calls[1]->{culprit}  , 'My::Shiny::Package::and_another_one-44' );
+is( $sentry_calls[0]->{culprit}  , 'My::Shiny::Package::emit_error-38-a7ce' );
+is( $sentry_calls[1]->{culprit}  , 'My::Shiny::Package::and_another_one-44-c8d0' );
 
 My::Shiny::Package->emit_error(2);
 

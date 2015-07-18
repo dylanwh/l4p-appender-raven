@@ -4,6 +4,7 @@ use Moose;
 
 use Carp;
 use Data::Dumper;
+use Digest::MD5;
 use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
@@ -113,7 +114,6 @@ See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
         my ($self) = @_;
         my $tmpl = Text::Template->new( TYPE => 'STRING',
                                         SOURCE => $self->sentry_culprit_template(),
-                                        
                                     );
         unless( $tmpl->compile() ){
             warn "Cannot compile template from '".$self->sentry_culprit_template()."' ERROR:".$Text::Template::ERROR.
@@ -227,9 +227,19 @@ sub log{
     }
 
     # Calculate the culprit from the template
-    my $sentry_culprit = $self->culprit_text_template->fill_in( HASH => {
-        %{$caller_properties}
-    });
+    my $sentry_culprit = $self->culprit_text_template->fill_in(
+        # PACKAGE => 'Log::Log4perl::Appender::Raven::TPPackage',
+        HASH => {
+            %{$caller_properties},
+            message => $sentry_message,
+            sign => sub{
+                my ($string, $offset, $length) = @_;
+                defined( $string ) || ( $string = '' );
+                defined( $offset ) || ( $offset = 0 );
+                defined( $length ) || ( $length = 4 );
+                return substr(Digest::MD5::md5_hex(substr($string, $offset, $length)), 0, 4);
+            }
+        });
 
     # OK WE HAVE THE BASIC Sentry options.
     $self->raven->capture_message($sentry_message,
@@ -322,15 +332,16 @@ Example:
 =head2 Configuring the culprit string
 
 By default, this appender will calculate the Sentry culprit to be
-the fully qualified name of the function that called the log method
-(like $log->error() or, $log->warn() etc.. )
+the fully qualified name of the function that called the log method, as Sentry
+recommends.
 
 If you require more flexibility and precision in your culprit, you can
 configure it as a template. For instance:
 
- log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}
+  log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}
 
-The default is '{$function}', as Sentry prescribes.
+The default is '{$function}', as Sentry prescribes. But most people will probably
+be more happy with the added {$line} element, as it makes discriminating between culprits easier.
 
 The template format follows L<Text::Template> and the available variables and functions are as follow:
 
@@ -343,6 +354,29 @@ The fully qualified name of the function that called the log method.
 =item line
 
 The line at which the log method was called
+
+=item message
+
+The Log4perl generated message. Keep in mind that this is the message AFTER it has been calculated by
+the layout pattern.
+
+=item sign($string, $offset, $length)
+
+A function that calculates a small (4 chars) signature of the given string. $string, $offset
+and $length are optional.
+
+This is useful for instance if some part of your code manage errors in a centralized way, or in other
+terms if the place at which you call '$log->error()' can output various messages.
+To help discriminating between culprit, you can for instance configure your culprit template:
+
+
+  log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}-{sign($message, 30, 4)}
+
+Note that in the example, we look at a part of the message after the 30th character, which
+helps skipping the common message parts defined by your message layout. Adjust this number (30)
+to make sure you pick a substring of your message in a meaningful area.
+
+=back
 
 =head2 Timeout
 
