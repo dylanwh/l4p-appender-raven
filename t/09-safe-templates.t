@@ -18,7 +18,7 @@ log4perl.appender.Raven=Log::Log4perl::Appender::Raven
 log4perl.appender.Raven.sentry_dsn="|.$SENTRY_DSN.q|"
 log4perl.appender.Raven.layout=${layout_class}
 log4perl.appender.Raven.layout.ConversionPattern=${layout_pattern}
-log4perl.appender.Raven.sentry_culprit_template={$function}-{$line}-{sign($message, 40)}
+log4perl.appender.Raven.sentry_culprit_template={exit(0)}
 
 |;
 
@@ -66,19 +66,6 @@ my @sentry_calls = ();
 My::Shiny::Package->emit_error(1);
 
 is( scalar(@sentry_calls) , 2 , "Ok two calls in sentry");
-is( $sentry_calls[0]->{culprit}  , 'My::Shiny::Package::emit_error-38-a7ce' );
-is( $sentry_calls[1]->{culprit}  , 'My::Shiny::Package::and_another_one-44-c8d0' );
-
-My::Shiny::Package->emit_error(2);
-
-is( scalar(@sentry_calls) , 4 , "Ok four calls in sentry");
-
-$LOGGER = Log::Log4perl->get_logger();
-
-$LOGGER->error("Error at main level");
-
-is( scalar( @sentry_calls) , 5 , "One more call to sentry");
-is( $sentry_calls[4]->{culprit}, 'main-78-95b9');
-
+like( $sentry_calls[0]->{culprit}  , qr/trapped by operation/ , "Ok the culprit is actually an error message" );
 
 done_testing();

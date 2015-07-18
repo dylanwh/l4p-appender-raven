@@ -8,6 +8,7 @@ use Digest::MD5;
 use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
+use Safe;
 use Text::Template;
 
 ## Configuration
@@ -33,6 +34,7 @@ has 'mdc_http' => ( is => 'ro' , isa => 'Maybe[Str]' , default => 'sentry_http' 
 # Operation objects
 has 'raven' => ( is => 'ro', isa => 'Sentry::Raven', lazy_build => 1);
 has 'culprit_text_template' => ( is => 'ro', isa => 'Text::Template' , lazy_build => 1);
+has 'safe' => ( is => 'ro' , isa => 'Safe', lazy_build => 1);
 
 
 my %L4P2SENTRY = ('ALL' => 'info',
@@ -105,6 +107,11 @@ See perldoc Log::Log4perl::Appender::Raven, section 'CODE WIHTOUT LOG4PERL'
             die @_;
         };
     }
+}
+
+sub _build_safe{
+    # We do not authorize anything.
+    return Safe->new();
 }
 
 {
@@ -228,7 +235,7 @@ sub log{
 
     # Calculate the culprit from the template
     my $sentry_culprit = $self->culprit_text_template->fill_in(
-        # PACKAGE => 'Log::Log4perl::Appender::Raven::TPPackage',
+        SAFE => $self->safe(),
         HASH => {
             %{$caller_properties},
             message => $sentry_message,
