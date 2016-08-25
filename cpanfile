@@ -5,6 +5,7 @@ requires 'Digest::MD5' , '>= 2.51';
 requires 'Log::Log4perl' , '>= 1.24';
 requires 'Moose' , '>= 2.0801';
 requires 'Safe' , '>= 2.16';
+requires 'Scope::Guard', '>= 0.21';
 requires 'Sentry::Raven', '>= 0.05';
 requires 'Text::Template', '>= 1.46';
 

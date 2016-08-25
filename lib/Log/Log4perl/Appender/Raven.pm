@@ -9,6 +9,7 @@ use Sentry::Raven;
 use Log::Log4perl;
 use Devel::StackTrace;
 use Safe;
+use Scope::Guard;
 use Text::Template;
 
 ## Configuration
@@ -233,20 +234,38 @@ sub log{
         $http = Log::Log4perl::MDC->get($mdc_http);
     }
 
+
     # Calculate the culprit from the template
-    my $sentry_culprit = $self->culprit_text_template->fill_in(
-        SAFE => $self->safe(),
-        HASH => {
-            %{$caller_properties},
-            message => $sentry_message,
-            sign => sub{
-                my ($string, $offset, $length) = @_;
-                defined( $string ) || ( $string = '' );
-                defined( $offset ) || ( $offset = 0 );
-                defined( $length ) || ( $length = 4 );
-                return substr(Digest::MD5::md5_hex(substr($string, $offset, $length)), 0, 4);
-            }
-        });
+    my $sentry_culprit = do{
+        #
+        # See this. This is very horrible.
+        # https://rt.cpan.org/Ticket/Display.html?id=112092
+        #
+        my %SIGNALS_BACKUP; my $guard;
+        if( $Safe::VERSION >= 2.35 ){
+            # We take a backup of the signals,
+            # just because we know Safe will anihitate
+            # them all :/
+            %SIGNALS_BACKUP = %SIG;
+            $guard = Scope::Guard::scope_guard(
+                sub{
+                    %SIG = %SIGNALS_BACKUP;
+                });
+        }
+        $self->culprit_text_template->fill_in(
+            SAFE => $self->safe(),
+            HASH => {
+                %{$caller_properties},
+                message => $sentry_message,
+                sign => sub{
+                    my ($string, $offset, $length) = @_;
+                    defined( $string ) || ( $string = '' );
+                    defined( $offset ) || ( $offset = 0 );
+                    defined( $length ) || ( $length = 4 );
+                    return substr(Digest::MD5::md5_hex(substr($string, $offset, $length)), 0, 4);
+                }
+            });
+    };
 
     # OK WE HAVE THE BASIC Sentry options.
     $self->raven->capture_message($sentry_message,

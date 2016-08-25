@@ -63,7 +63,11 @@ my @sentry_calls = ();
     use strict;
 }
 
+$SIG{INT} = sub{ print "Some stuff;"};
+
 My::Shiny::Package->emit_error(1);
+
+ok( $SIG{INT}, "Ok signal handler is still there");
 
 is( scalar(@sentry_calls) , 2 , "Ok two calls in sentry");
 like( $sentry_calls[0]->{culprit}  , qr/trapped by operation/ , "Ok the culprit is actually an error message" );
